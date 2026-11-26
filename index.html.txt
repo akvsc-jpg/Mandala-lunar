@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Mandala Lunar" />
+  <meta name="theme-color" content="#FAF8F5" />
+  <title>Mandala Lunar — Ciclo & Hábitos</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Fontes: Inter + Cormorant Garamond para acento editorial sereno -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+          },
+          colors: {
+            linen: '#FAF8F5',
+            sand: '#F2EFE9',
+            sandDark: '#E6E0D6',
+            borderSoft: '#EAE4DB',
+            ink: '#2D2A26',
+            muted: '#78726A',
+            roseTerracotta: '#D97B66',
+            sage: '#6B9E78',
+            slateBlue: '#6889A8',
+            ochre: '#D49B4B',
+            lavender: '#8E7AB5',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #FAF8F5;
+      color: #2D2A26;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: calc(env(safe-area-inset-bottom) + 84px);
+      overflow-x: hidden;
+      overscroll-behavior-y: none;
+    }
+
+    .card-soft {
+      background-color: #FFFFFF;
+      border: 1px solid #EAE4DB;
+      box-shadow: 0 2px 12px rgba(45, 42, 38, 0.03);
+    }
+
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tab-panel {
+      animation: fadeSlide 0.24s ease-out forwards;
+    }
+
+    /* Estilo interativo para fatias da Mandala SVG */
+    .mandala-wedge-group {
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .mandala-wedge-group:active {
+      opacity: 0.8;
+    }
+
+    /* Remover setas nativas exageradas em inputs numéricos mantendo teclado numérico no iOS */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-[#D97B66]/20">
+
+  <div class="max-w-md mx-auto px-4 pt-4">
+
+    <!-- Cabeçalho Principal -->
+    <header class="flex items-center justify-between gap-2 mb-3">
+      <div>
+        <h1 class="font-serif text-2xl font-bold tracking-tight text-ink leading-none">
+          Mandala Lunar
+        </h1>
+        <p id="header-subtitle" class="text-xs text-muted mt-1">
+          Acompanhamento orgânico do seu ritmo
+        </p>
+      </div>
+
+      <!-- Seletor de Ciclo (Atual vs Ciclos Anteriores) -->
+      <div class="relative">
+        <select
+          id="cycle-selector"
+          aria-label="Selecionar ciclo"
+          class="appearance-none bg-white border border-borderSoft rounded-full pl-3.5 pr-8 py-1.5 text-xs font-medium text-ink shadow-sm focus:outline-none focus:border-roseTerracotta max-w-[195px] truncate"
+        >
+          <!-- Preenchido dinamicamente -->
+        </select>
+        <svg class="w-3.5 h-3.5 text-muted pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </header>
+
+    <!-- Banner discreto caso dados de exemplo estejam ativos -->
+    <div id="demo-banner" class="hidden mb-3 px-3.5 py-2.5 rounded-2xl bg-sand border border-borderSoft flex items-center justify-between gap-2">
+      <p class="text-[11px] text-ink/85 leading-snug">
+        Você está vendo um ciclo de exemplo.
+      </p>
+      <button
+        id="btn-clear-demo-top"
+        type="button"
+        class="shrink-0 text-[11px] font-semibold text-roseTerracotta hover:underline px-2 py-1"
+      >
+        Começar meu ciclo
+      </button>
+    </div>
+
+    <!-- ============================================================
+         ABA 1: MANDALA LUNAR + REGISTRO DO DIA
+         ============================================================ -->
+    <main id="tab-mandala" class="tab-panel">
+
+      <!-- Card da Mandala Interativa -->
+      <section class="card-soft rounded-3xl p-3.5 mb-3.5 relative">
+        <!-- Barra superior de contexto do ciclo -->
+        <div class="flex items-center justify-between text-[11px] text-muted px-1 mb-1">
+          <span id="cycle-range-badge" class="font-medium">Início: —</span>
+          <span id="cycle-length-badge" class="px-2 py-0.5 rounded-full bg-sand text-ink font-medium">
+            Ciclo variável
+          </span>
+        </div>
+
+        <!-- Container Responsivo do SVG da Mandala -->
+        <div class="relative w-full aspect-square max-w-[335px] mx-auto flex items-center justify-center">
+          <svg
+            id="mandala-svg"
+            viewBox="0 0 360 360"
+            class="w-full h-full overflow-visible select-none"
+            role="img"
+            aria-label="Mandala Lunar do ciclo e hábitos"
+          >
+            <!-- Camadas geradas dinamicamente via JS -->
+          </svg>
+
+          <!-- Núcleo Central Clicável / Informativo -->
+          <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-16">
+            <span id="core-moon-icon" class="text-lg leading-none mb-0.5">🌓</span>
+            <div class="flex items-center justify-center gap-1.5">
+              <span id="core-cycle-day" class="font-serif text-2xl font-bold text-ink leading-tight">
+                Dia 1
+              </span>
+              <span id="core-nam-pill" class="hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[#B5838D]/20 text-[#8F5D67] leading-none">
+                nam
+              </span>
+            </div>
+            <span id="core-calendar-date" class="text-[11px] font-medium text-muted">
+              26 Nov
+            </span>
+            <span id="core-phase-label" class="mt-1 text-[10px] px-2 py-0.5 rounded-full bg-sand text-ink/80 font-medium max-w-[112px] truncate">
+              Fase Folicular
+            </span>
+            <span id="core-screentime-badge" class="hidden mt-1 text-[10px] font-semibold text-slateBlue">
+              📱 2h 10m
+            </span>
+          </div>
+        </div>
+
+        <!-- Legenda compacta dos 6 anéis -->
+        <div id="mandala-legend" class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 pt-2 mt-1 border-t border-borderSoft/70">
+          <!-- Preenchido via JS -->
+        </div>
+      </section>
+
+      <!-- Card de Check-in do Dia Selecionado -->
+      <section class="card-soft rounded-3xl p-4 mb-4">
+        <!-- Navegação do Dia Selecionado -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-borderSoft">
+          <button
+            id="btn-prev-day"
+            type="button"
+            class="w-9 h-9 rounded-xl bg-sand/70 hover:bg-sand flex items-center justify-center text-ink active:scale-95 transition-transform"
+            aria-label="Dia anterior"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <div class="text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <h2 id="checkin-date-title" class="text-sm font-semibold text-ink">
+                Quinta, 26 de Novembro
+              </h2>
+              <button
+                id="btn-go-today"
+                type="button"
+                class="hidden text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-roseTerracotta/15 text-roseTerracotta"
+              >
+                Hoje
+              </button>
+            </div>
+            <p id="checkin-moon-detail" class="text-[11px] text-muted mt-0.5">
+              Lua Crescente • Dia 12 do ciclo
+            </p>
+          </div>
+
+          <button
+            id="btn-next-day"
+            type="button"
+        <!-- Controles do Ciclo Menstrual (Dia 1, Fluxo e nam próximo ao dia do ciclo) -->
+        <div class="grid grid-cols-3 gap-2 mb-4">
+          <button
+            id="btn-toggle-day1"
+            type="button"
+            class="py-2.5 px-2.5 rounded-2xl border text-xs font-medium transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          >
+            <span class="w-2 h-2 rounded-full bg-roseTerracotta shrink-0"></span>
+            <span id="label-toggle-day1" class="truncate">Dia 1</span>
+          </button>
+
+          <button
+            id="btn-toggle-flow"
+            type="button"
+            class="py-2.5 px-2.5 rounded-2xl border text-xs font-medium transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          >
+            <span class="shrink-0">🩸</span>
+            <span id="label-toggle-flow" class="truncate">Fluxo</span>
+          </button>
+
+          <button
+            id="btn-toggle-nam"
+            type="button"
+            class="py-2.5 px-2.5 rounded-2xl border text-xs font-medium transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]"
+          >
+            <span id="dot-toggle-nam" class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: #B5838D;"></span>
+            <span id="label-toggle-nam" class="truncate">nam</span>
+          </button>
+        </div>
+
+        <!-- Os 6 Hábitos (Anéis da Mandala) -->
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-muted">
+              Hábitos do dia
+            </span>
+            <span id="habits-done-counter" class="text-[11px] text-muted">0/6</span>
+          </div>
+
+          <div id="habit-toggles-grid" class="grid grid-cols-1 gap-2">
+            <!-- Botões dos 6 hábitos preenchidos via JS -->
+          </div>
+        </div>
+
+        <!-- Tempo de Tela (Input Numérico) -->
+        <div class="p-3.5 rounded-2xl bg-linen border border-borderSoft mb-3">
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-base">📱</span>
+              <div>
+                <label for="input-screen-hours" class="block text-xs font-semibold text-ink">
+                  Tempo de tela
+                </label>
+                <span id="screentime-status-hint" class="text-[11px] text-muted">
+                  Registre o total do dia
+                </span>
+              </div>
+            </div>
+
+            <!-- Campos Numéricos: Horas e Minutos -->
+            <div class="flex items-center gap-1.5">
+              <div class="flex items-center bg-white border border-borderSoft rounded-xl px-2 py-1.5 focus-within:border-slateBlue">
+                <input
+                  id="input-screen-hours"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  max="24"
+                  placeholder="0"
+                  aria-label="Horas de tempo de tela"
+                  class="w-7 text-center text-sm font-semibold text-ink focus:outline-none"
+                />
+                <span class="text-xs text-muted font-medium">h</span>
+              </div>
+
+              <div class="flex items-center bg-white border border-borderSoft rounded-xl px-2 py-1.5 focus-within:border-slateBlue">
+                <input
+                  id="input-screen-minutes"
+                  type="number"
+                  inputmode="numeric"
+                  min="0"
+                  max="59"
+                  placeholder="00"
+                  aria-label="Minutos de tempo de tela"
+                  class="w-8 text-center text-sm font-semibold text-ink focus:outline-none"
+                />
+                <span class="text-xs text-muted font-medium">m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Atalhos rápidos para facilitar no celular -->
+          <div class="flex items-center justify-between gap-1.5 pt-1">
+            <span class="text-[10px] text-muted">Atalhos:</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-st-mins="60" class="st-preset px-2.5 py-1 rounded-lg bg-white border border-borderSoft text-[11px] font-medium text-ink hover:bg-sand">1h</button>
+              <button type="button" data-st-mins="120" class="st-preset px-2.5 py-1 rounded-lg bg-white border border-borderSoft text-[11px] font-medium text-ink hover:bg-sand">2h</button>
+              <button type="button" data-st-mins="180" class="st-preset px-2.5 py-1 rounded-lg bg-white border border-borderSoft text-[11px] font-medium text-ink hover:bg-sand">3h</button>
+              <button type="button" data-st-mins="240" class="st-preset px-2.5 py-1 rounded-lg bg-white border border-borderSoft text-[11px] font-medium text-ink hover:bg-sand">4h</button>
+              <button type="button" id="btn-clear-screentime" class="px-2 py-1 rounded-lg text-[11px] text-muted hover:text-ink">Limpar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nota breve / percepção do corpo no dia -->
+        <div>
+          <label for="input-day-note" class="sr-only">Nota breve do dia</label>
+          <input
+            id="input-day-note"
+            type="text"
+            maxlength="120"
+            placeholder="Nota breve do dia (energia, humor, sintomas...)"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-linen border border-borderSoft text-xs text-ink placeholder:text-muted/70 focus:outline-none focus:border-ink/40"
+          />
+        </div>
+      </section>
+    </main>
+
+    <!-- ============================================================
+         ABA 2: CICLOS & PADRÕES
+         ============================================================ -->
+    <main id="tab-patterns" class="hidden tab-panel">
+      <!-- Resumo da Variabilidade dos Ciclos -->
+      <section class="grid grid-cols-2 gap-3 mb-4">
+        <div class="card-soft rounded-2xl p-4">
+          <p class="text-[11px] text-muted">Duração média</p>
+          <p id="stats-avg-cycle" class="font-serif text-2xl font-bold text-ink mt-0.5">— dias</p>
+          <p id="stats-cycle-range" class="text-[11px] text-muted mt-1">Variação: —</p>
+        </div>
+
+        <div class="card-soft rounded-2xl p-4">
+          <p class="text-[11px] text-muted">Tempo de tela médio</p>
+          <p id="stats-avg-screentime" class="font-serif text-2xl font-bold text-ink mt-0.5">—</p>
+          <p id="stats-screentime-days" class="text-[11px] text-muted mt-1">No ciclo selecionado</p>
+        </div>
+      </section>
+
+      <!-- Consistência dos 5 Hábitos no Ciclo Selecionado -->
+      <section class="card-soft rounded-3xl p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h2 class="text-sm font-semibold text-ink">Hábitos neste ciclo</h2>
+            <p id="patterns-cycle-subtitle" class="text-xs text-muted">Proporção de dias realizados</p>
+          </div>
+        </div>
+
+        <div id="patterns-habits-bars" class="space-y-3">
+          <!-- Barras preenchidas via JS -->
+        </div>
+      </section>
+
+      <!-- Gráfico de Tempo de Tela ao Longo do Ciclo -->
+      <section class="card-soft rounded-3xl p-4 mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <h2 class="text-sm font-semibold text-ink">Tempo de tela por dia do ciclo</h2>
+            <p class="text-xs text-muted">Observe seu uso ao longo das fases</p>
+          </div>
+          <span id="patterns-goal-label" class="text-[11px] px-2 py-0.5 rounded-full bg-sand text-muted">
+            Ref: 2h 30m
+          </span>
+        </div>
+
+        <div id="screentime-chart" class="h-32 flex items-end gap-1 pt-4 pb-1 border-b border-borderSoft overflow-x-auto">
+          <!-- Barras verticais por dia do ciclo -->
+        </div>
+        <div class="flex justify-between text-[10px] text-muted mt-1.5">
+          <span>Dia 1</span>
+          <span id="screentime-chart-end-label">Dia 28</span>
+        </div>
+      </section>
+
+      <!-- Histórico de Ciclos Registrados (Sem julgamento de regularidade) -->
+      <section class="card-soft rounded-3xl p-4">
+        <h2 class="text-sm font-semibold text-ink mb-1">Histórico de ciclos</h2>
+        <p class="text-xs text-muted mb-3">
+          Cada ciclo tem sua própria duração natural a partir do Dia 1 registrado.
+        </p>
+
+        <div id="cycles-history-list" class="divide-y divide-borderSoft">
+          <!-- Lista de ciclos -->
+        </div>
+      </section>
+    </main>
+
+    <!-- ============================================================
+         ABA 3: AJUSTES & DADOS
+         ============================================================ -->
+    <main id="tab-settings" class="hidden tab-panel">
+      <!-- Personalizar Nomes/Cores dos 6 Hábitos -->
+      <section class="card-soft rounded-3xl p-4 mb-4">
+        <h2 class="text-sm font-semibold text-ink mb-1">Os 6 Anéis da Mandala</h2>
+        <p class="text-xs text-muted mb-3">
+          Toque no nome se quiser ajustar algum rótulo dos seus 6 hábitos.
+        </p>
+
+        <div id="settings-habits-list" class="space-y-2.5">
+          <!-- Inputs para os 6 hábitos -->
+        </div>
+      </section>
+
+      <!-- Referência de Tempo de Tela -->
+      <section class="card-soft rounded-3xl p-4 mb-4">
+        <h2 class="text-sm font-semibold text-ink mb-1">Referência diária de tempo de tela</h2>
+        <p class="text-xs text-muted mb-3">
+          Usada apenas como guia visual suave nos registros e gráficos.
+        </p>
+
+        <div class="flex items-center gap-3">
+          <div class="flex items-center bg-linen border border-borderSoft rounded-xl px-3 py-2">
+            <input
+              id="settings-goal-hours"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="16"
+              class="w-8 text-center text-sm font-semibold text-ink bg-transparent focus:outline-none"
+            />
+            <span class="text-xs text-muted">h</span>
+          </div>
+
+          <div class="flex items-center bg-linen border border-borderSoft rounded-xl px-3 py-2">
+            <input
+              id="settings-goal-minutes"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              max="59"
+              class="w-9 text-center text-sm font-semibold text-ink bg-transparent focus:outline-none"
+            />
+            <span class="text-xs text-muted">min</span>
+          </div>
+
+          <button
+            id="btn-save-goal"
+            type="button"
+            class="ml-auto px-4 py-2 rounded-xl bg-ink text-white text-xs font-medium active:scale-95 transition-transform"
+          >
+            Salvar guia
+          </button>
+        </div>
+      </section>
+
+      <!-- Datas de Início de Ciclo (Dia 1) -->
+      <section class="card-soft rounded-3xl p-4 mb-4">
+        <h2 class="text-sm font-semibold text-ink mb-1">Datas de Dia 1 registradas</h2>
+        <p class="text-xs text-muted mb-3">
+          Gerencie os inícios de ciclo caso precise corrigir alguma data.
+        </p>
+
+        <div id="settings-starts-list" class="space-y-2">
+          <!-- Lista de datas de Dia 1 -->
+        </div>
+      </section>
+
+      <!-- Como instalar no iPhone -->
+      <section class="card-soft rounded-3xl p-4 mb-4">
+        <div class="flex items-start gap-3">
+          <span class="text-xl">📲</span>
+          <div>
+            <h2 class="text-sm font-semibold text-ink">Adicionar à Tela de Início do iPhone</h2>
+            <p class="text-xs text-muted leading-relaxed mt-1">
+              Abra este arquivo no <strong>Safari</strong>, toque em <strong>Compartilhar</strong> (ícone com seta para cima) e escolha <strong>"Adicionar à Tela de Início"</strong>. Todos os seus dados ficam salvos offline no aparelho.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Backup e Reinício -->
+      <section class="card-soft rounded-3xl p-4">
+        <h2 class="text-sm font-semibold text-ink mb-1">Privacidade e Backup</h2>
+        <p class="text-xs text-muted mb-3">
+          Seus dados nunca saem do seu dispositivo. Exporte um arquivo JSON para guardar seu histórico.
+        </p>
+
+        <div class="grid grid-cols-2 gap-2.5 mb-3">
+          <button
+            id="btn-export-data"
+            type="button"
+            class="py-2.5 px-3 rounded-xl bg-sand hover:bg-sandDark text-xs font-medium text-ink transition-colors"
+          >
+            ↓ Exportar JSON
+          </button>
+
+          <label class="py-2.5 px-3 rounded-xl bg-sand hover:bg-sandDark text-xs font-medium text-ink transition-colors text-center cursor-pointer">
+            ↑ Importar JSON
+            <input id="input-import-data" type="file" accept=".json,application/json" class="hidden" />
+          </label>
+        </div>
+
+        <button
+          id="btn-reset-all"
+          type="button"
+          class="w-full py-2.5 px-3 rounded-xl border border-roseTerracotta/40 text-roseTerracotta text-xs font-medium hover:bg-roseTerracotta/5 transition-colors"
+        >
+          Limpar todos os dados e começar do zero
+        </button>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- Barra de Navegação Inferior Fixa -->
+  <nav
+    class="fixed bottom-0 inset-x-0 bg-[#FAF8F5]/92 backdrop-blur-md border-t border-borderSoft z-30"
+    style="padding-bottom: env(safe-area-inset-bottom);"
+  >
+    <div class="max-w-md mx-auto grid grid-cols-3 h-16 px-4">
+      <button
+        type="button"
+        data-tab-target="mandala"
+        class="nav-tab-btn flex flex-col items-center justify-center gap-1 text-ink font-medium transition-colors"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="4" />
+        </svg>
+        <span class="text-[11px]">Mandala</span>
+      </button>
+
+      <button
+        type="button"
+        data-tab-target="patterns"
+        class="nav-tab-btn flex flex-col items-center justify-center gap-1 text-muted hover:text-ink transition-colors"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 19h16M7 15v-4m5 4V7m5 8v-6" />
+        </svg>
+        <span class="text-[11px]">Ciclos</span>
+      </button>
+
+      <button
+        type="button"
+        data-tab-target="settings"
+        class="nav-tab-btn flex flex-col items-center justify-center gap-1 text-muted hover:text-ink transition-colors"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+        <span class="text-[11px]">Ajustes</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Toast discreto (substitui alert/confirm) -->
+  <div
+    id="toast"
+    class="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 bg-ink text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg"
+  >
+    Salvo
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ============================================================
+      // 1. CONFIGURAÇÃO INICIAL E CONSTANTES
+      // ============================================================
+      const STORAGE_KEY = 'mandala_lunar_v1';
+
+      // Os 6 hábitos ordenados do anel externo para o mais interno (nam junto ao núcleo do ciclo)
+      const DEFAULT_HABITS = [
+        { id: 'tempo_junto', name: 'Tempo junto', color: '#D97B66', emoji: '🤍' },
+        { id: 'atividade_fisica', name: 'Atividade física', color: '#6B9E78', emoji: '🌿' },
+        { id: 'trabalho', name: 'Trabalho', color: '#6889A8', emoji: '💼' },
+        { id: 'leitura', name: 'Leitura', color: '#D49B4B', emoji: '📖' },
+        { id: 'escrita', name: 'Escrita', color: '#8E7AB5', emoji: '✍️' },
+        { id: 'nam', name: 'nam', color: '#B5838D', emoji: '🌸' }
+      ];
+
+      const NAM_HABIT_TEMPLATE = { id: 'nam', name: 'nam', color: '#B5838D', emoji: '🌸' };
+// ... existing code ... -->
+        // Preenche dias 1 a 4 com fluxo menstrual no ciclo atual
+        for (let i = 0; i < 4; i++) {
+          const k = addDaysToKey(currentStart, i);
+          logs[k] = {
+            habits: i % 2 === 0 ? ['nam', 'leitura', 'escrita'] : ['nam', 'tempo_junto', 'leitura'],
+            flow: true,
+            screenMinutes: 140 + i * 15,
+            note: i === 0 ? 'Início do ciclo — ritmo mais acolhedor' : ''
+          };
+        }
+
+        // Preenche dias 5 a 11 (até hoje) com hábitos variados
+        const samplePatterns = [
+          { habits: ['nam', 'atividade_fisica', 'trabalho', 'leitura'], st: 135 },
+          { habits: ['tempo_junto', 'trabalho', 'escrita'], st: 165 },
+          { habits: ['nam', 'atividade_fisica', 'trabalho', 'leitura', 'escrita'], st: 115 },
+          { habits: ['tempo_junto', 'atividade_fisica', 'trabalho'], st: 150 },
+          { habits: ['nam', 'trabalho', 'leitura'], st: 195 },
+          { habits: ['nam', 'tempo_junto', 'atividade_fisica', 'leitura', 'escrita'], st: 110 },
+          { habits: ['nam', 'trabalho', 'leitura', 'escrita'], st: 130 }
+        ];
+
+        for (let i = 4; i <= 11; i++) {
+          const k = addDaysToKey(currentStart, i);
+          const pat = samplePatterns[(i - 4) % samplePatterns.length];
+          logs[k] = {
+            habits: [...pat.habits],
+            flow: false,
+            screenMinutes: pat.st,
+            note: ''
+          };
+        }
+
+        return {
+          isDemo: true,
+          habits: JSON.parse(JSON.stringify(DEFAULT_HABITS)),
+          cycleStarts: [prevStart1, prevStart2, currentStart], // Sempre ordenado crescente
+          screenGoalMinutes: 150, // 2h30m
+          logs
+        };
+      }
+
+      /**
+       * Garante que usuários com 5 hábitos salvos anteriormente recebam o "nam" sem perder histórico
+       */
+      function ensureSixHabitsMigration(habitsList) {
+        if (!Array.isArray(habitsList) || habitsList.length === 0) {
+          return JSON.parse(JSON.stringify(DEFAULT_HABITS));
+        }
+        const copy = habitsList.map((h) => ({ ...h }));
+        const hasNam = copy.some((h) => h.id === 'nam');
+        if (!hasNam) {
+          copy.push({ ...NAM_HABIT_TEMPLATE });
+        }
+        return copy;
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            const demo = createDemoState();
+            saveStateToStorage(demo);
+            return demo;
+          }
+          const parsed = JSON.parse(raw);
+          const migratedHabits = ensureSixHabitsMigration(parsed.habits);
+          const loaded = {
+            isDemo: Boolean(parsed.isDemo),
+            habits: migratedHabits,
+            cycleStarts: Array.isArray(parsed.cycleStarts)
+              ? [...new Set(parsed.cycleStarts)].sort()
+              : [],
+            screenGoalMinutes: typeof parsed.screenGoalMinutes === 'number'
+              ? parsed.screenGoalMinutes
+              : 150,
+            logs: parsed.logs && typeof parsed.logs === 'object' ? parsed.logs : {}
+          };
+          if (!Array.isArray(parsed.habits) || parsed.habits.length !== migratedHabits.length) {
+            saveStateToStorage(loaded);
+          }
+          return loaded;
+        } catch (e) {
+          return createDemoState();
+        }
+      }
+// ... existing code ... -->
+        const cx = 180;
+        const cy = 180;
+
+        // Raios dos 6 anéis concêntricos (de fora para dentro)
+        // Aro externo: dias e lua (155..171)
+        // 6 anéis de hábitos (sendo o 6º "nam" o mais interno, adjacente ao núcleo do Dia do Ciclo):
+        const ringRadii = [
+          { rOut: 152, rIn: 139 }, // Hábito 1: Tempo junto
+          { rOut: 137, rIn: 124 }, // Hábito 2: Atividade física
+          { rOut: 122, rIn: 109 }, // Hábito 3: Trabalho
+          { rOut: 107, rIn: 94 },  // Hábito 4: Leitura
+          { rOut: 92,  rIn: 79 },  // Hábito 5: Escrita
+          { rOut: 77,  rIn: 64 }   // Hábito 6: nam (adjacente ao núcleo do Dia do Ciclo)
+        ];
+
+        const angleStep = 360 / totalSlices;
+        const gapDeg = totalSlices > 34 ? 1.1 : 1.5;
+
+        let svgContent = '';
+
+        // Círculo suave de fundo da Mandala
+        svgContent += `<circle cx="${cx}" cy="${cy}" r="173" fill="#FAF8F5" stroke="#EAE4DB" stroke-width="1" />`;
+        svgContent += `<circle cx="${cx}" cy="${cy}" r="59" fill="#FFFFFF" stroke="#EAE4DB" stroke-width="1" />`;
+
+        for (let i = 0; i < totalSlices; i++) {
+          const dayNum = i + 1;
+          const sliceDateKey = addDaysToKey(cycle.startDate, i);
+          const isFutureInActive = cycle.isActive && sliceDateKey > todayKey;
+          const isSelected = sliceDateKey === selectedDateKey;
+          const isToday = sliceDateKey === todayKey;
+          const isDay1 = state.cycleStarts.includes(sliceDateKey);
+
+          const log = getDayLog(sliceDateKey);
+          const moon = getMoonPhaseInfo(sliceDateKey);
+
+          const startAngle = i * angleStep + gapDeg / 2;
+          const endAngle = (i + 1) * angleStep - gapDeg / 2;
+          const midAngle = (startAngle + endAngle) / 2;
+
+          svgContent += `<g class="mandala-wedge-group" data-slice-date="${sliceDateKey}">`;
+
+          // Fundo sutil de destaque caso seja o dia selecionado
+          if (isSelected) {
+            const selPath = createRingSectorPath(cx, cy, 61, 172, startAngle - 0.5, endAngle + 0.5);
+            svgContent += `<path d="${selPath}" fill="rgba(45, 42, 38, 0.06)" stroke="#2D2A26" stroke-width="1.2" />`;
+          } else if (isToday) {
+            const todayPath = createRingSectorPath(cx, cy, 61, 172, startAngle - 0.3, endAngle + 0.3);
+            svgContent += `<path d="${todayPath}" fill="rgba(217, 123, 102, 0.06)" />`;
+          }
+
+          // Aro externo do dia (mostra fluxo menstrual em terracota suave ou neutro)
+          const outerPath = createRingSectorPath(cx, cy, 155, 170, startAngle, endAngle);
+          let outerFill = isFutureInActive ? '#F5F2EC' : '#EFECE6';
+          if (log.flow) {
+            outerFill = isDay1 ? '#D97B66' : 'rgba(217, 123, 102, 0.45)';
+          }
+          svgContent += `<path d="${outerPath}" fill="${outerFill}" />`;
+
+          // Número do dia no aro externo
+          const labelPos = polarToCartesian(cx, cy, 162.5, midAngle);
+          const textColor = log.flow && isDay1 ? '#FFFFFF' : isSelected ? '#2D2A26' : '#78726A';
+          const fontWeight = isSelected || isToday || isDay1 ? '700' : '500';
+          const fontSize = totalSlices > 33 ? '7.5' : '8.5';
+
+          svgContent += `
+            <text
+              x="${labelPos.x.toFixed(1)}"
+              y="${(labelPos.y + 3).toFixed(1)}"
+              text-anchor="middle"
+              font-size="${fontSize}"
+              font-weight="${fontWeight}"
+              fill="${textColor}"
+            >${dayNum}</text>
+          `;
+
+          // Marcador discreto das 4 fases principais da Lua fora do aro
+          if (moon.isKeyPhase) {
+            const moonPos = polarToCartesian(cx, cy, 177, midAngle);
+            svgContent += `
+              <text
+                x="${moonPos.x.toFixed(1)}"
+                y="${(moonPos.y + 3).toFixed(1)}"
+                text-anchor="middle"
+                font-size="8"
+              >${moon.icon}</text>
+            `;
+          }
+
+          // Os 6 anéis de hábitos
+          state.habits.forEach((habit, hIndex) => {
+            const ring = ringRadii[hIndex];
+            if (!ring) return;
+            const sectorPath = createRingSectorPath(cx, cy, ring.rIn, ring.rOut, startAngle, endAngle);
+            const completed = log.habits.includes(habit.id);
+
+            const fill = completed
+              ? habit.color
+              : isFutureInActive
+              ? '#F7F4EE'
+              : '#F0ECE4';
+
+            svgContent += `<path d="${sectorPath}" fill="${fill}" />`;
+          });
+
+          // Pequeno ponto indicador no anel interno se houver Tempo de Tela registrado
+          if (typeof log.screenMinutes === 'number' && log.screenMinutes > 0) {
+            const stDotPos = polarToCartesian(cx, cy, 61.5, midAngle);
+            const overGoal = log.screenMinutes > state.screenGoalMinutes;
+            svgContent += `<circle cx="${stDotPos.x.toFixed(1)}" cy="${stDotPos.y.toFixed(1)}" r="1.5" fill="${overGoal ? '#D49B4B' : '#6889A8'}" />`;
+          }
+
+          svgContent += `</g>`;
+        }
+
+        svg.innerHTML = svgContent;
+
+        // Eventos de clique/toque em cada fatia da Mandala
+        svg.querySelectorAll('.mandala-wedge-group').forEach((group) => {
+          group.addEventListener('click', () => {
+            const clickedDate = group.getAttribute('data-slice-date');
+            if (clickedDate) {
+              selectedDateKey = clickedDate;
+              renderAll();
+            }
+          });
+        });
+
+        // Atualiza núcleo central da Mandala
+        const selectedDayNum = Math.max(1, diffDays(cycle.startDate, selectedDateKey) + 1);
+        const selectedMoon = getMoonPhaseInfo(selectedDateKey);
+        const selectedLog = getDayLog(selectedDateKey);
+        const namHabit = state.habits.find((h) => h.id === 'nam') || NAM_HABIT_TEMPLATE;
+        const namDone = selectedLog.habits.includes(namHabit.id);
+        const phaseName = getFlexiblePhaseLabel(
+          selectedDayNum,
+          selectedLog.flow,
+          cycle.actualLength
+        );
+
+        document.getElementById('core-moon-icon').textContent = selectedMoon.icon;
+        document.getElementById('core-cycle-day').textContent = `Dia ${selectedDayNum}`;
+
+        const coreNamPill = document.getElementById('core-nam-pill');
+        coreNamPill.textContent = namHabit.name;
+        coreNamPill.style.backgroundColor = `${namHabit.color}26`;
+        coreNamPill.style.color = namHabit.color;
+        coreNamPill.classList.toggle('hidden', !namDone);
+
+        document.getElementById('core-calendar-date').textContent = formatShortPt(selectedDateKey);
+        document.getElementById('core-phase-label').textContent = phaseName;
+
+        const stBadge = document.getElementById('core-screentime-badge');
+        if (typeof selectedLog.screenMinutes === 'number' && selectedLog.screenMinutes > 0) {
+          stBadge.textContent = `📱 ${formatMinutesHuman(selectedLog.screenMinutes)}`;
+          stBadge.classList.remove('hidden');
+        } else {
+          stBadge.classList.add('hidden');
+        }
+
+        // Badges superiores do card da Mandala
+        document.getElementById('cycle-range-badge').textContent = cycle.isFallback
+          ? 'Sem Dia 1 marcado'
+          : `Início: ${formatShortPt(cycle.startDate)}`;
+
+        document.getElementById('cycle-length-badge').textContent = cycle.isActive
+          ? `Dia ${cycle.actualLength} em curso`
+          : `Duração real: ${cycle.actualLength} dias`;
+
+        // Legenda dos 6 anéis
+        const legendEl = document.getElementById('mandala-legend');
+        legendEl.innerHTML = state.habits
+          .map(
+            (h) => `
+            <span class="inline-flex items-center gap-1.5 text-[11px] text-muted">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${h.color};"></span>
+              <span>${escapeHtml(h.name)}</span>
+            </span>
+          `
+          )
+          .join('');
+      }
+// ... existing code ... -->
+        const goTodayBtn = document.getElementById('btn-go-today');
+        goTodayBtn.classList.toggle('hidden', selectedDateKey === todayKey);
+
+        // Botão Dia 1
+        const day1Btn = document.getElementById('btn-toggle-day1');
+        const day1Label = document.getElementById('label-toggle-day1');
+        if (isDay1) {
+          day1Btn.className =
+            'py-2.5 px-2.5 rounded-2xl border border-roseTerracotta bg-roseTerracotta text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm';
+          day1Label.textContent = 'Dia 1 ✓';
+        } else {
+          day1Btn.className =
+            'py-2.5 px-2.5 rounded-2xl border border-borderSoft bg-linen hover:bg-sand text-ink text-xs font-medium transition-all flex items-center justify-center gap-1.5';
+          day1Label.textContent = 'Dia 1';
+        }
+
+        // Botão Fluxo Menstrual
+        const flowBtn = document.getElementById('btn-toggle-flow');
+        const flowLabel = document.getElementById('label-toggle-flow');
+        if (log.flow) {
+          flowBtn.className =
+            'py-2.5 px-2.5 rounded-2xl border border-roseTerracotta/50 bg-roseTerracotta/15 text-[#A84A36] text-xs font-semibold transition-all flex items-center justify-center gap-1.5';
+          flowLabel.textContent = 'Fluxo ✓';
+        } else {
+          flowBtn.className =
+            'py-2.5 px-2.5 rounded-2xl border border-borderSoft bg-linen hover:bg-sand text-muted text-xs font-medium transition-all flex items-center justify-center gap-1.5';
+          flowLabel.textContent = 'Fluxo';
+        }
+
+        // Botão rápido "nam" próximo ao Dia do Ciclo
+        const namHabit = state.habits.find((h) => h.id === 'nam') || NAM_HABIT_TEMPLATE;
+        const namDone = log.habits.includes(namHabit.id);
+        const namBtn = document.getElementById('btn-toggle-nam');
+        const namDot = document.getElementById('dot-toggle-nam');
+        const namLabel = document.getElementById('label-toggle-nam');
+
+        namLabel.textContent = namDone ? `${namHabit.name} ✓` : namHabit.name;
+        if (namDone) {
+          namBtn.className =
+            'py-2.5 px-2.5 rounded-2xl border text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]';
+          namBtn.style.backgroundColor = namHabit.color;
+          namBtn.style.borderColor = namHabit.color;
+          namDot.style.backgroundColor = '#FFFFFF';
+        } else {
+          namBtn.className =
+            'py-2.5 px-2.5 rounded-2xl border border-borderSoft bg-linen hover:bg-sand text-ink text-xs font-medium transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]';
+          namBtn.style.backgroundColor = '';
+          namBtn.style.borderColor = '';
+          namDot.style.backgroundColor = namHabit.color;
+        }
+
+        // Lista dos 6 hábitos
+        const habitsGrid = document.getElementById('habit-toggles-grid');
+        habitsGrid.innerHTML = '';
+
+        state.habits.forEach((habit) => {
+          const done = log.habits.includes(habit.id);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `w-full px-3.5 py-2.5 rounded-2xl border transition-all flex items-center justify-between text-left active:scale-[0.99] ${
+            done
+              ? 'bg-white border-borderSoft shadow-sm'
+              : 'bg-linen/70 border-borderSoft/80 hover:bg-sand/50'
+          }`;
+
+          btn.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span
+                class="w-3.5 h-3.5 rounded-full shrink-0 transition-transform ${done ? 'scale-110' : 'opacity-55'}"
+                style="background-color: ${habit.color};"
+              ></span>
+              <span class="text-sm ${done ? 'font-semibold text-ink' : 'font-medium text-muted'}">
+                ${escapeHtml(habit.name)}
+              </span>
+            </div>
+
+            <span
+              class="w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors"
+              style="${
+                done
+                  ? `background-color: ${habit.color}; color: #FFFFFF;`
+                  : 'border: 1.5px solid #D6CFC4; color: transparent;'
+              }"
+            >✓</span>
+          `;
+
+          btn.addEventListener('click', () => toggleHabit(selectedDateKey, habit.id));
+          habitsGrid.appendChild(btn);
+        });
+
+        document.getElementById('habits-done-counter').textContent = `${log.habits.length}/${state.habits.length}`;
+// ... existing code ... -->
+        // Controles do Ciclo (Dia 1, Fluxo e nam)
+        document.getElementById('btn-toggle-day1').addEventListener('click', () => {
+          toggleDay1(selectedDateKey);
+        });
+
+        document.getElementById('btn-toggle-flow').addEventListener('click', () => {
+          toggleFlow(selectedDateKey);
+        });
+
+        document.getElementById('btn-toggle-nam').addEventListener('click', () => {
+          const namHabit = state.habits.find((h) => h.id === 'nam') || NAM_HABIT_TEMPLATE;
+          toggleHabit(selectedDateKey, namHabit.id);
+        });
+// ... existing code ... -->
+              state = {
+                isDemo: false,
+                habits: ensureSixHabitsMigration(imported.habits),
+                cycleStarts: [...new Set(imported.cycleStarts)].sort(),
+                screenGoalMinutes: imported.screenGoalMinutes || 150,
+                logs: imported.logs || {}
+              };
+// ... existing code ... -->
